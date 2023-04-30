@@ -39,32 +39,21 @@
       }
 
       table {
-        width: 100%;
         margin-top: 32px;
         border-collapse: collapse;
+        width: 100%;
       }
 
-      th, td {
-        padding: 8px;
+      th,
+      td {
         text-align: left;
+        padding: 8px;
         border-bottom: 1px solid #ddd;
       }
 
       th {
-        background-color: #4CAF50;
+        background-color: #4caf50;
         color: white;
-      }
-
-      .text-center {
-        text-align: center;
-      }
-
-      .text-danger {
-        color: red;
-      }
-      
-      .text-success {
-        color: green;
       }
     </style>
   </head>
@@ -77,8 +66,7 @@
       </div>
 
       <div id="qr-code-result"></div>
-
-      <table id="attendees-table">
+      <table id="attendance-table">
         <thead>
           <tr>
             <th>Code</th>
@@ -87,92 +75,72 @@
             <th>Attended</th>
           </tr>
         </thead>
-        <tbody></tbody>
+        <tbody id="guest-list-body"></tbody>
       </table>
     </div>
 
-    <script>
-    const codeReader = new ZXing.BrowserQRCodeReader();
-const videoElement = document.getElementById('qr-code-video');
-const resultElement = document.getElementById('qr-code-result');
-const attendanceTable = document.getElementById('attendance-table-body');
-
-let data = []; // Initialize guest data array
-let attendance = []; // Initialize attendance data array
-
-// Load guest data from external JSON file
-fetch('guest-data.json')
-  .then(response => response.json())
-  .then(guestData => {
-    data = guestData;
-  })
-  .catch(error => console.error(error));
-
-// Load attendance data from local storage
-const localStorageData = localStorage.getItem('attendance');
-if (localStorageData) {
-  attendance = JSON.parse(localStorageData);
-}
-
-// Function to update the attendance table
-function updateAttendanceTable() {
-  attendanceTable.innerHTML = ''; // Clear previous data
-
-  // Loop through attendance data and append to table
-  attendance.forEach(item => {
-    const row = attendanceTable.insertRow();
-
-    const codeCell = row.insertCell();
-    codeCell.innerText = item.code;
-
-    const nameCell = row.insertCell();
-    nameCell.innerText = item.name;
-
-    const descCell = row.insertCell();
-    descCell.innerText = item.desc;
-  });
-}
-
-// Update attendance table on page load
-updateAttendanceTable();
-
-// Function to add new attendance item
-function addAttendance(code) {
-  const attendee = data.find(item => item.code === code); // Get guest data
-
-  // Check if attendee already exists in attendance data
-  const existingAttendee = attendance.find(item => item.code === code);
-  if (existingAttendee) {
-    resultElement.innerText = 'Anda Sudah Scan Sebelumnya!'; // Display message if attendee already exists
-    return;
-  }
-
-  // Add new attendance item to array and update local storage
-  attendance.push({
-    code: code,
-    name: attendee.name,
-    desc: attendee.desc
-  });
-  localStorage.setItem('attendance', JSON.stringify(attendance));
-
-  // Update attendance table and display success message
-  updateAttendanceTable();
-  resultElement.innerText = `Selamat datang ${attendee.name} dari ${attendee.desc}, Terima kasih sudah hadir di acara pernikahan Kami!`;
-
-  // Play beep sound
-  const audio = new Audio('https://www.soundjay.com/buttons/beep-08b.wav');
-  audio.play();
-}
-
-// Set up scanner
-codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
-  if (result) {
-    addAttendance(result.text); // Call addAttendance function on scan
-  } else if (error && error.name !== 'NotFoundException') {
-    console.error(error);
-  }
-});
-
-    </script>
+    <script>const codeReader = new ZXing.BrowserQRCodeReader();
+      const videoElement = document.getElementById('qr-code-video');
+      const resultElement = document.getElementById('qr-code-result');
+      const tableBody = document.getElementById('guest-list-body');
+      
+      let guestData = [];
+      
+      // Load guest data from external file
+      fetch('guest-data.json')
+        .then(response => response.json())
+        .then(data => {
+          guestData = data;
+          // Set up scanner
+          codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
+            if (result) {
+              // Check if scanned code exists in the guest data
+              const attendee = guestData.find(item => item.code === result.text);
+              if (attendee) {
+                // Check if attendee already checked in
+                if (!attendee.isAttended) {
+                  // Update guest data with attendance info
+                  attendee.isAttended = true;
+                  attendee.updatedBy = 'QR Code Scanner';
+                  attendee.updatedAt = new Date().toISOString();
+                  // Add attendee to attendance list
+                  const newRow = tableBody.insertRow();
+                  newRow.innerHTML = `<td>${attendee.code}</td>
+                                      <td>${attendee.name}</td>
+                                      <td>${attendee.desc}</td>
+                                      <td>${new Date().toLocaleString()}</td>`;
+                  // Save updated guest data to external file
+                  saveGuestData(guestData);
+                  // Display success message and play beep sound
+                  resultElement.innerText = `Selamat datang ${attendee.name} dari ${attendee.desc}, Terima kasih sudah hadir di pernikahan kami !`;
+                  const audio = new Audio('beep-08b.wav');
+                  audio.play();
+                } else {
+                  // Display error message if attendee already checked in
+                  resultElement.innerText = 'Anda sudah melakukan check-in';
+                }
+              } else {
+                // Display error message if code not found in guest data
+                resultElement.innerText = 'QR Kode Salah!!!';
+              }
+            } else if (error && error.name !== 'NotFoundException') {
+              console.error(error);
+            }
+          });
+        })
+        .catch(error => console.error(error));
+      
+      // Save guest data to external file
+      function saveGuestData(data) {
+        fetch('guest-data.json', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+        .catch(error => console.error(error));
+      }
+      </script>
   </body>
 </html>
