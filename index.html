@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Attendance Tracker</title>
+    <title>QR Code Scanner</title>
     <script src="https://unpkg.com/@zxing/library@0.18.3"></script>
     <style>
       body {
@@ -39,28 +39,38 @@
       }
 
       table {
-        border-collapse: collapse;
         width: 100%;
         margin-top: 32px;
+        border-collapse: collapse;
       }
 
       th, td {
-        text-align: left;
         padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
       }
 
       th {
-        background-color: #dddddd;
+        background-color: #4CAF50;
+        color: white;
       }
 
-      tr:nth-child(even) {
-        background-color: #f2f2f2;
+      .text-center {
+        text-align: center;
+      }
+
+      .text-danger {
+        color: red;
+      }
+      
+      .text-success {
+        color: green;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Attendance Tracker</h1>
+      <h1>QR Code Scanner</h1>
 
       <div>
         <video id="qr-code-video"></video>
@@ -68,71 +78,101 @@
 
       <div id="qr-code-result"></div>
 
-      <table id="attendee-table">
+      <table id="attendees-table">
         <thead>
           <tr>
             <th>Code</th>
             <th>Name</th>
-            <th>Desc</th>
-            <th>Shift</th>
+            <th>Description</th>
+            <th>Attended</th>
           </tr>
         </thead>
-        <tbody>
-        </tbody>
+        <tbody></tbody>
       </table>
     </div>
 
-    <script type="text/javascript">
-      const codeReader = new ZXing.BrowserQRCodeReader();
+    <script>
+    const codeReader = new ZXing.BrowserQRCodeReader();
 const videoElement = document.getElementById('qr-code-video');
 const resultElement = document.getElementById('qr-code-result');
-const attendeesTable = document.getElementById('attendees-table');
-let attendees = [];
+const attendanceTable = document.getElementById('attendance-table-body');
 
-// Load JSON data from external file
+let data = []; // Initialize guest data array
+let attendance = []; // Initialize attendance data array
+
+// Load guest data from external JSON file
 fetch('guest-data.json')
   .then(response => response.json())
-  .then(data => {
-    // Set up scanner
-    codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
-      if (result) {
-        // Check if scanned code exists in the JSON data
-        const attendee = data.find(item => item.code === result.text);
-        if (attendee) {
-          // Add attendee to attendance list if not already added
-          if (!attendees.some(item => item.code === attendee.code)) {
-            attendees.push(attendee);
-            // Display attendee in attendance table
-            const row = attendeesTable.insertRow();
-            const codeCell = row.insertCell();
-            const nameCell = row.insertCell();
-            const descCell = row.insertCell();
-            const timeCell = row.insertCell();
-            codeCell.innerText = attendee.code;
-            nameCell.innerText = attendee.name;
-            descCell.innerText = attendee.desc;
-            timeCell.innerText = new Date().toLocaleTimeString();
-            // Update attendance data in external file
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', 'attendance-data.json');
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            xhr.send(JSON.stringify(attendees));
-          }
-          // Display message if code exists
-          resultElement.innerText = `Selamat datang ${attendee.name} dari ${attendee.desc}, Terima kasih sudah hadir !`;
-          // Play beep sound
-          const audio = new Audio('https://www.soundjay.com/buttons/beep-08b.wav');
-          audio.play();
-        } else {
-          // Display error message if code not found
-          resultElement.innerText = 'QR Kode Salah!!!';
-        }
-      } else if (error && error.name !== 'NotFoundException') {
-        console.error(error);
-      }
-    });
+  .then(guestData => {
+    data = guestData;
   })
   .catch(error => console.error(error));
+
+// Load attendance data from local storage
+const localStorageData = localStorage.getItem('attendance');
+if (localStorageData) {
+  attendance = JSON.parse(localStorageData);
+}
+
+// Function to update the attendance table
+function updateAttendanceTable() {
+  attendanceTable.innerHTML = ''; // Clear previous data
+
+  // Loop through attendance data and append to table
+  attendance.forEach(item => {
+    const row = attendanceTable.insertRow();
+
+    const codeCell = row.insertCell();
+    codeCell.innerText = item.code;
+
+    const nameCell = row.insertCell();
+    nameCell.innerText = item.name;
+
+    const descCell = row.insertCell();
+    descCell.innerText = item.desc;
+  });
+}
+
+// Update attendance table on page load
+updateAttendanceTable();
+
+// Function to add new attendance item
+function addAttendance(code) {
+  const attendee = data.find(item => item.code === code); // Get guest data
+
+  // Check if attendee already exists in attendance data
+  const existingAttendee = attendance.find(item => item.code === code);
+  if (existingAttendee) {
+    resultElement.innerText = 'Anda Sudah Scan Sebelumnya!'; // Display message if attendee already exists
+    return;
+  }
+
+  // Add new attendance item to array and update local storage
+  attendance.push({
+    code: code,
+    name: attendee.name,
+    desc: attendee.desc
+  });
+  localStorage.setItem('attendance', JSON.stringify(attendance));
+
+  // Update attendance table and display success message
+  updateAttendanceTable();
+  resultElement.innerText = `Selamat datang ${attendee.name} dari ${attendee.desc}, Terima kasih sudah hadir di acara pernikahan Kami!`;
+
+  // Play beep sound
+  const audio = new Audio('https://www.soundjay.com/buttons/beep-08b.wav');
+  audio.play();
+}
+
+// Set up scanner
+codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
+  if (result) {
+    addAttendance(result.text); // Call addAttendance function on scan
+  } else if (error && error.name !== 'NotFoundException') {
+    console.error(error);
+  }
+});
+
     </script>
   </body>
 </html>
