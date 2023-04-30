@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>QR Code Scanner</title>
+    <title>Attendance Tracker</title>
     <script src="https://unpkg.com/@zxing/library@0.18.3"></script>
     <style>
       body {
@@ -38,67 +38,101 @@
         padding: 16px;
       }
 
-      @media screen and (min-width: 480px) {
-        #qr-code-video {
-          width: 480px;
-          height: 480px;
-        }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 32px;
+      }
+
+      th, td {
+        text-align: left;
+        padding: 8px;
+      }
+
+      th {
+        background-color: #dddddd;
+      }
+
+      tr:nth-child(even) {
+        background-color: #f2f2f2;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>QR Code Scanner</h1>
+      <h1>Attendance Tracker</h1>
 
       <div>
         <video id="qr-code-video"></video>
       </div>
 
       <div id="qr-code-result"></div>
-	<!-- <audio id="beep" src="https://www.soundjay.com/buttons/beep-08b.wav"></audio> -->
+
+      <table id="attendee-table">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Name</th>
+            <th>Desc</th>
+            <th>Shift</th>
+          </tr>
+        </thead>
+        <tbody>
+        </tbody>
+      </table>
     </div>
 
-    <script>
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', 'guest-data.json');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          const data = JSON.parse(xhr.responseText);
-          processResult(data);
-        }
-      };
-      xhr.send();
-
+    <script type="text/javascript">
       const codeReader = new ZXing.BrowserQRCodeReader();
-      const videoElement = document.getElementById('qr-code-video');
-      const resultElement = document.getElementById('qr-code-result');
+const videoElement = document.getElementById('qr-code-video');
+const resultElement = document.getElementById('qr-code-result');
+const attendeesTable = document.getElementById('attendees-table');
+let attendees = [];
 
-      // Load JSON data from external file
-      fetch('guest-data.json')
-        .then(response => response.json())
-        .then(data => {
-          // Set up scanner
-          codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
-            if (result) {
-              // Check if scanned code exists in the JSON data
-              const attendee = data.find(item => item.code === result.text);
-              if (attendee) {
-                // Display message if code exists
-                resultElement.innerText = `Selamat datang ${attendee.name} dari ${attendee.desc}, Terima kasih sudah hadir !`;
-                // Play beep sound
-                const audio = new Audio('https://www.soundjay.com/buttons/beep-08b.wav');
-                audio.play();
-              } else {
-                // Display error message if code not found
-                resultElement.innerText = 'QR Kode Salah!!!';
-              }
-            } else if (error && error.name !== 'NotFoundException') {
-              console.error(error);
-            }
-          });
-        })
-        .catch(error => console.error(error));
+// Load JSON data from external file
+fetch('guest-data.json')
+  .then(response => response.json())
+  .then(data => {
+    // Set up scanner
+    codeReader.decodeFromVideoDevice(undefined, videoElement, (result, error) => {
+      if (result) {
+        // Check if scanned code exists in the JSON data
+        const attendee = data.find(item => item.code === result.text);
+        if (attendee) {
+          // Add attendee to attendance list if not already added
+          if (!attendees.some(item => item.code === attendee.code)) {
+            attendees.push(attendee);
+            // Display attendee in attendance table
+            const row = attendeesTable.insertRow();
+            const codeCell = row.insertCell();
+            const nameCell = row.insertCell();
+            const descCell = row.insertCell();
+            const timeCell = row.insertCell();
+            codeCell.innerText = attendee.code;
+            nameCell.innerText = attendee.name;
+            descCell.innerText = attendee.desc;
+            timeCell.innerText = new Date().toLocaleTimeString();
+            // Update attendance data in external file
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', 'attendance-data.json');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.send(JSON.stringify(attendees));
+          }
+          // Display message if code exists
+          resultElement.innerText = `Selamat datang ${attendee.name} dari ${attendee.desc}, Terima kasih sudah hadir !`;
+          // Play beep sound
+          const audio = new Audio('https://www.soundjay.com/buttons/beep-08b.wav');
+          audio.play();
+        } else {
+          // Display error message if code not found
+          resultElement.innerText = 'QR Kode Salah!!!';
+        }
+      } else if (error && error.name !== 'NotFoundException') {
+        console.error(error);
+      }
+    });
+  })
+  .catch(error => console.error(error));
     </script>
   </body>
 </html>
