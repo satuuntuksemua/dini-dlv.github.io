@@ -9,5 +9,16 @@
     "isExchanged": "",
     "exchangedAt": "",
     "exchangedBy": ""
+  },
+  {
+    "code": "DXI-0002",
+    "name": "STK Wildah",
+    "desc": "Testing 2, Sukabumi",
+    "shift": 1,
+    "isAttended": "",
+    "updatedBy": "",
+    "isExchanged": "",
+    "exchangedAt": "",
+    "exchangedBy": ""
   }
 ]
