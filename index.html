@@ -151,7 +151,7 @@
       // Save guest data to external file
       function saveGuestData(data) {
         fetch('attendance-data.json', {
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
