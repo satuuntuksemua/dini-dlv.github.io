@@ -149,44 +149,44 @@
         .catch(error => console.error(error));
       
       // Save guest data to external file
-      // function saveGuestData(data) {
-      //   fetch('attendance-data.json', {
-      //     method: 'POST',
-      //     headers: {
-      //       'Content-Type': 'application/json'
-      //     },
-      //     body: JSON.stringify(data)
-      //   })
-      //   .catch(error => console.error(error));
-      // }
       function saveGuestData(data) {
-  const githubRepo = 'satuuntuksemua/satuuntuksemua.github.io';
-  const filePath = 'guest-data.json';
-  const authToken = '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';
-
-  const commitMessage = 'Update guest data';
-  const commitContent = JSON.stringify(data);
-
-  fetch(`https://api.github.com/repos/${githubRepo}/contents/${filePath}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${authToken}`,
-    },
-    body: JSON.stringify({
-      message: commitMessage,
-      content: btoa(commitContent),
-    }),
-  })
-    .then(response => {
-      if (response.ok) {
-        console.log('Guest data saved to GitHub successfully.');
-      } else {
-        console.error('Failed to save guest data to GitHub.');
+        fetch('attendance-data.json', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        })
+        .catch(error => console.error(error));
       }
-    })
-    .catch(error => console.error(error));
-}
+//       function saveGuestData(data) {
+//   const githubRepo = 'satuuntuksemua/satuuntuksemua.github.io';
+//   const filePath = 'guest-data.json';
+//   const authToken = '';
+
+//   const commitMessage = 'Update guest data';
+//   const commitContent = JSON.stringify(data);
+
+//   fetch(`https://api.github.com/repos/${githubRepo}/contents/${filePath}`, {
+//     method: 'PUT',
+//     headers: {
+//       'Content-Type': 'application/json',
+//       Authorization: `Bearer ${authToken}`,
+//     },
+//     body: JSON.stringify({
+//       message: commitMessage,
+//       content: btoa(commitContent),
+//     }),
+//   })
+//     .then(response => {
+//       if (response.ok) {
+//         console.log('Guest data saved to GitHub successfully.');
+//       } else {
+//         console.error('Failed to save guest data to GitHub.');
+//       }
+//     })
+//     .catch(error => console.error(error));
+// }
 
       </script>
   </body>
