@@ -121,9 +121,7 @@
             (result, error) => {
               if (result) {
                 // Check if scanned code exists in the guest data
-                const attendee = guestData.find(
-                  (item) => item.code === result.text
-                );
+                const attendee = guestData.find((item) => item.code === result.text);
                 if (attendee) {
                   // Check if attendee already checked in
                   if (!attendee.isAttended) {
@@ -195,23 +193,19 @@
 
       // Function to convert the table to a CSV string
       function convertTableToCSV() {
-        const rows = tableBody.getElementsByTagName('tr');
-        const csvRows = [];
+        const table = document.getElementById('attendance-table');
+        const rows = Array.from(table.getElementsByTagName('tr'));
+        const headerRow = rows.shift();
+        const headers = Array.from(headerRow.getElementsByTagName('th'));
+        const headerCells = headers.map((header) => `"${header.innerText}"`);
 
-        for (let i = 0; i < rows.length; i++) {
-          const row = rows[i];
-          const cells = row.getElementsByTagName('td');
-          const csvCells = [];
+        const csvRows = rows.map((row) => {
+          const cells = Array.from(row.getElementsByTagName('td'));
+          const csvCells = cells.map((cell) => `"${cell.innerText}"`);
+          return csvCells.join(',');
+        });
 
-          for (let j = 0; j < cells.length; j++) {
-            const cell = cells[j].innerText;
-            csvCells.push('"' + cell.replace(/"/g, '""') + '"');
-          }
-
-          csvRows.push(csvCells.join(','));
-        }
-
-        return csvRows.join('\n');
+        return [headerCells.join(','), ...csvRows].join('\n');
       }
     </script>
   </body>
